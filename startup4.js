@@ -1,5 +1,5 @@
 //script used and statistics
-var autoScript = "early-hack-template-2.script";
+var autoScript = "early-hack-template-3.script";
 var scriptRamUsage = getScriptRam(autoScript);
 
 // Array of all servers that don't need any ports opened
@@ -42,7 +42,6 @@ var servers3Port = ["netlink",
 for (var i = 0; i < servers0Port.length; ++i) {
     var hostname = servers0Port[i];
 	killall(hostname);
-    tprint("killing " + hostname);
 	var maxRam = getServerMaxRam(hostname);
     var usedRam = getServerUsedRam(hostname);
     var currentRam = maxRam - usedRam;
@@ -53,7 +52,6 @@ for (var i = 0; i < servers0Port.length; ++i) {
     relaysmtp(hostname);
     nuke(hostname);
     exec(autoScript, hostname, calcThreads);
-    tprint("running " + autoScript + " on " + hostname);
 }
 
 // Wait until we acquire the "BruteSSH.exe" program
@@ -67,7 +65,6 @@ for (var i = 0; i < servers0Port.length; ++i) {
 for (var i = 0; i < servers1Port.length; ++i) {
     var hostname = servers1Port[i];
 	killall(hostname);
-    tprint("killing " + hostname);
 	var maxRam = getServerMaxRam(hostname);
     var usedRam = getServerUsedRam(hostname);
     var currentRam = maxRam - usedRam;
@@ -78,7 +75,6 @@ for (var i = 0; i < servers1Port.length; ++i) {
     relaysmtp(hostname);
     nuke(hostname);
     exec(autoScript, hostname, calcThreads);
-    tprint("running " + autoScript + " on " + hostname);
 }
 
 // Copy our scripts onto each server that requires 2 ports
@@ -87,7 +83,6 @@ for (var i = 0; i < servers1Port.length; ++i) {
 for (var i = 0; i < servers2Port.length; ++i) {
     var hostname = servers2Port[i];
 	killall(hostname);
-    tprint("killing " + hostname);
 	var maxRam = getServerMaxRam(hostname);
     var usedRam = getServerUsedRam(hostname);
     var currentRam = maxRam - usedRam;
@@ -98,7 +93,6 @@ for (var i = 0; i < servers2Port.length; ++i) {
     relaysmtp(hostname);
     nuke(hostname);
     exec(autoScript, hostname, calcThreads);
-    tprint("running " + autoScript + " on " + hostname);
 }
 
 // Copy our scripts onto each server that requires 2 ports
@@ -107,17 +101,14 @@ for (var i = 0; i < servers2Port.length; ++i) {
 for (var i = 0; i < servers3Port.length; ++i) {
     var hostname = servers3Port[i];
 	killall(hostname);
-    tprint("killing " + hostname);
 	var maxRam = getServerMaxRam(hostname);
     var usedRam = getServerUsedRam(hostname);
     var currentRam = maxRam - usedRam;
     var calcThreads = Math.floor(currentRam / scriptRamUsage);
     scp(autoScript, hostname);
-    tprint("running " autoScript + " on " + hostname);
     brutessh(hostname);
 	ftpcrack(hostname);
     relaysmtp(hostname);
     nuke(hostname);
     exec(autoScript, hostname, calcThreads);
-    tprint("running " + autoScript + " on " + hostname);
 }
