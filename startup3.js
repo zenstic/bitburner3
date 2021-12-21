@@ -113,7 +113,7 @@ for (var i = 0; i < servers3Port.length; ++i) {
     var currentRam = maxRam - usedRam;
     var calcThreads = Math.floor(currentRam / scriptRamUsage);
     scp(autoScript, hostname);
-    tprint("running " autoScript + " on " + hostname);
+    tprint("running " + autoScript + " on " + hostname);
     brutessh(hostname);
 	ftpcrack(hostname);
     relaysmtp(hostname);
