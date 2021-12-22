@@ -191,7 +191,7 @@ function scanAll(host, servers, ns) {
             servers.add(hosts[i]);
             scanAll(hosts[i], servers, ns);
         }
-        //return servers;
+        return servers;
     }
 					   
 				   
