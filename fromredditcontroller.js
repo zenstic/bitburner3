@@ -11,11 +11,11 @@ export async function main(ns) {
         }
         ns.tprint(`servers:${[...servers.values()]}`)
         var freeRams = getFreeRam(ns, servers);
-        ns.tprint(`freeRams:${freeRams.map(value => JSON.stringify(value))}`)
+        // ns.tprint(`freeRams:${freeRams.map(value => JSON.stringify(value))}`)
         var hackables = getHackable(ns, servers);
         // ns.tprint(`hackable:${[...hackables.values()]}`)
         var hackstates = getHackStates(ns, servers, hackables)
-        //ns.tprint(`hackstates:${[...hackstates.entries()].map((v, _i) => `${v[0]}:{${JSON.stringify(v[1])}}\n`)}`)
+        ns.tprint(`hackstates:${[...hackstates.entries()].map((v, _i) => `${v[0]}:{${JSON.stringify(v[1])}}\n`)}`)
         manageAndHack(ns, freeRams, hackables, hackstates)
         await ns.sleep(10000)
     }
@@ -133,7 +133,6 @@ function getHackable(ns, servers) {
 
 function getFreeRam(ns, servers) {
     const freeRams = [];
-    scanAll("home", servers, ns);
     for (let server of servers) {
         const freeRam = ns.getServerMaxRam(server) - ns.getServerUsedRam(server);
         if (freeRam > 1) {
@@ -191,7 +190,12 @@ function scanAll(host, servers, ns) {
             servers.add(hosts[i]);
             scanAll(hosts[i], servers, ns);
         }
+ 
     }
+<<<<<<< HEAD
     //ns.tprint(hosts);
     //return servers;
 }
+=======
+}
+>>>>>>> 133c91a8e9d225b46801b1689b5ce9a268f4359c
