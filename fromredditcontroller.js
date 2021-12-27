@@ -11,7 +11,7 @@ export async function main(ns) {
         }
         ns.tprint(`servers:${[...servers.values()]}`)
         var freeRams = getFreeRam(ns, servers);
-         ns.tprint(`freeRams:${freeRams.map(value => JSON.stringify(value))}`)
+        ns.tprint(`freeRams:${freeRams.map(value => JSON.stringify(value))}`)
         var hackables = getHackable(ns, servers);
         // ns.tprint(`hackable:${[...hackables.values()]}`)
         var hackstates = getHackStates(ns, servers, hackables)
@@ -20,7 +20,7 @@ export async function main(ns) {
         await ns.sleep(10000)
     }
 }
- 
+
 function manageAndHack(ns, freeRams, hackables, hackstates) {
     for (let target of hackables) {
         const money = ns.getServerMoneyAvailable(target);
@@ -100,6 +100,7 @@ function findPlaceToRun(ns, script, threads, freeRams, target) {
     }
  
 }
+
 function getHackStates(ns, servers, hackables) {
     var hackstates = new Map();
     for (let server of servers.values()) {
@@ -122,13 +123,14 @@ function getHackStates(ns, servers, hackables) {
     }
     return hackstates
 }
+
 function getHackable(ns, servers) {
     return [...servers.values()].filter(server => ns.getServerMaxMoney(server) > 100000
         && ns.getServerMoneyAvailable(server) > 1000
         && ns.getServerGrowth(server))
         .sort((a, b) => ns.getServerRequiredHackingLevel(a) - ns.getServerRequiredHackingLevel(b))
 }
- 
+
 function getFreeRam(ns, servers) {
     const freeRams = [];
     scanAll("home", servers, ns);
@@ -142,7 +144,7 @@ function getFreeRam(ns, servers) {
     var sortedFreeRams = freeRams.sort((a, b) => b.freeRam - a.freeRam);
     return sortedFreeRams;
 }
- 
+
 function scanAndHack(ns) {
     let servers = new Set(["home"]);
     scanAll("home", servers, ns);
@@ -180,7 +182,7 @@ function scanAndHack(ns) {
     }
     return accesibleServers.add("home");
 }
- 
+
 function scanAll(host, servers, ns) {
     var hosts = ns.scan(host);
     ns.print(hosts);
@@ -190,6 +192,6 @@ function scanAll(host, servers, ns) {
             scanAll(hosts[i], servers, ns);
         }
     }
-    ns.tprint(hosts);
-    return servers;
+    //ns.tprint(hosts);
+    //return servers;
 }
