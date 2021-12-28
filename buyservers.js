@@ -23,18 +23,18 @@ export async function main(ns) {
 	var x;
 
 	//checking if we have already purchased servers
-	if(maxServers.length > 0){
-		x = 1;
-	}
-	else{
-		x = 0;
-	}
+	//if(maxServers.length > 0){
+	//	x = 1;
+	//}
+	//else{
+	//	x = 0;
+	//}
 
 	ns.tprint("size index length: " + sizeIndexLength);
 	//ns.tprint("Initial X Value: " + x);
 	
 	//looping through the sizeindex array as we purchase servers
-	for (x < sizeIndexLength; x++;) {
+	for (x = maxServers.length > 0 ? 1 : 0; x < len; x++) {
 		//looping through purchasing loop
 		for (var i = 0; i < maxServers;) {
 			//initial server purchase and setup
