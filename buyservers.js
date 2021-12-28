@@ -1,32 +1,41 @@
 /** @param {NS} ns **/
 export async function main(ns) {
 
+//the goal of this script is to purchase small servers if we don't have any
+//once small servers are purchased, jump to the next larger size servers
+//continue until we are at 10240gb servers. 
+//future: build sizeindex array using ns.getPurchasedServerMaxRam()
+
 	//scripts to be copied into purchased servers
 	var scriptUsed1 = "weaken.js";
 	var scriptUsed2 = "hack.js";
 	var scriptUsed3 = "grow.js";
 
-	//server sizes to step through
+	//server ram sizes to step through
 	var sizeindex = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 3072, 4096, 5120, 6144, 7168, 8192, 9216, 10240];
 
+	//initializing iterators
 	var i = 0;
 	var x = 0;
+
+	//getting maximum servers allowed
+	var maxServers = ns.getPurchasedServerLimit();
+
 	//checking if we have already purchased servers
-	if(ns.getPurchasedServers().length > 0){
+	if(maxServers.length > 0){
 		x = 1;
 	}
-	//looping through the sizeindex array
+
+	//looping through the sizeindex array as we purchase servers
 	for (x < sizeindex.length; x++;) {
-
-
 		//looping through purchasing loop
-		for (var i = 0; i < ns.getPurchasedServerLimit();) {
+		for (var i = 0; i < maxServers;) {
 			//initial server purchase and setup
 			if (x == 0) {
 				ns.tprint("value of x in if loop: " + x);
 				// Continuously try to purchase servers until we've reached the maximum
 				// amount of servers
-				while (i < ns.getPurchasedServerLimit()) {
+				while (i < maxServers) {
 					// Check if we have enough money to purchase a server
 					var servercost = ns.getPurchasedServerCost(sizeindex[x]);
 					if (ns.getServerMoneyAvailable("home") > servercost) {
@@ -52,7 +61,7 @@ export async function main(ns) {
 				//resetting iterator in case we set it to something else earlier
 				//i = 0;
 				//looping until we purchase all servers we are allowed
-				while (i < ns.getPurchasedServerLimit()) {
+				while (i < maxServers) {
 					// Check if we have enough money to purchase a server
 					if (ns.getServerMoneyAvailable("home") > servercost) {
 						// If we have enough money, then:

@@ -193,6 +193,4 @@ function scanAll(host, servers, ns) {
         }
         //return servers;
     }
-					   
-				   
 }
