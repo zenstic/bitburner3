@@ -1,3 +1,5 @@
+/** @param {NS} ns **/
+export async function main(ns) {
 // Array of all servers that don't need any ports opened
 // to gain root access. These have 16 GB of RAM
 var servers0Port = ["n00dles",
@@ -22,10 +24,10 @@ var servers1Port = ["neo-net",
 for (var i = 0; i < servers0Port.length; ++i) {
     var serv = servers0Port[i];
 
-    scp("early-hack-template.script", serv);
-    nuke(serv);
-    exec("early-hack-template.script", serv, 6);
-}
+    await ns.scp("early-hack-template.script", serv);
+    await ns.nuke(serv);
+    //await ns.exec("early-hack-template.script", serv, 6);
+    }
 
 // Wait until we acquire the "BruteSSH.exe" program
 //while (!fileExists("BruteSSH.exe")) {
@@ -38,8 +40,9 @@ for (var i = 0; i < servers0Port.length; ++i) {
 for (var i = 0; i < servers1Port.length; ++i) {
     var serv = servers1Port[i];
 
-    scp("early-hack-template.script", serv);
-    brutessh(serv);
-    nuke(serv);
-    exec("early-hack-template.script", serv, 12);
+    await ns.scp("early-hack-template.script", serv);
+    await ns.brutessh(serv);
+    await ns.nuke(serv);
+    //await ns.exec("early-hack-template.script", serv, 12);
+    }
 }
