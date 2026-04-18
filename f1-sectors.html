@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>F1 Sector Times</title>
+  <style>
+    /* ── tokens ── */
+    :root {
+      --bg-primary:   #0f0f0f;
+      --bg-secondary: #1a1a1a;
+      --bg-card:      #242424;
+      --bg-row-alt:   #1e1e1e;
+      --border:       #333333;
+
+      --f1-red:       #e10600;
+      --white:        #ffffff;
+      --gray-light:   #aaaaaa;
+      --gray-mid:     #666666;
+
+      --col-purple:   #a855f7;
+      --col-green:    #22c55e;
+      --col-yellow:   #eab308;
+
+      --font-mono:    'Courier New', Courier, monospace;
+      --font-sans:    -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --radius:       6px;
+    }
+
+    /* ── reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-primary);
+      color: var(--white);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── header ── */
+    header {
+      background: var(--bg-secondary);
+      border-bottom: 3px solid var(--f1-red);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .title-group { display: flex; align-items: center; gap: 10px; }
+    .f1-logo {
+      font-weight: 900;
+      font-size: 1.4rem;
+      color: var(--f1-red);
+      letter-spacing: -1px;
+      font-style: italic;
+    }
+    h1 { font-size: 1.15rem; font-weight: 600; }
+
+    /* ── live badge ── */
+    .live-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+    }
+    .live-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--col-green);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.7); }
+    }
+    .live-badge {
+      background: var(--col-green);
+      color: #000;
+      font-weight: 700;
+      font-size: 0.68rem;
+      padding: 2px 7px;
+      border-radius: 3px;
+      letter-spacing: 1.5px;
+    }
+    .last-updated { color: var(--gray-light); }
+
+    /* ── controls ── */
+    #controls {
+      background: var(--bg-secondary);
+      padding: 12px 24px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 180px;
+      flex: 1;
+    }
+    label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--gray-light);
+    }
+    select {
+      background: var(--bg-card);
+      color: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: border-color 0.15s ease;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23aaa' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 28px;
+    }
+    select:focus { outline: none; border-color: var(--f1-red); }
+    select:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    /* ── stats bar ── */
+    #stats-bar {
+      display: flex;
+      gap: 12px;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 120px;
+      flex: 1;
+    }
+    .stat-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--gray-light);
+    }
+    .stat-value {
+      font-family: var(--font-mono);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--col-purple);
+    }
+    .stat-driver { font-size: 0.72rem; color: var(--gray-light); }
+
+    /* ── table wrapper ── */
+    #table-wrapper {
+      flex: 1;
+      overflow-x: auto;
+      padding: 0 24px 32px;
+      position: relative;
+    }
+
+    /* ── loading ── */
+    #loading-overlay {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 60px 24px;
+      color: var(--gray-light);
+      font-size: 0.9rem;
+    }
+    .spinner {
+      width: 22px; height: 22px;
+      border: 3px solid var(--border);
+      border-top-color: var(--f1-red);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── error banner ── */
+    #error-banner {
+      background: #2a0808;
+      border: 1px solid var(--f1-red);
+      color: #f87171;
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-top: 20px;
+      font-size: 0.88rem;
+    }
+
+    /* ── table ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin-top: 16px;
+    }
+    thead th {
+      background: var(--bg-secondary);
+      color: var(--gray-light);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 10px 12px;
+      text-align: left;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      border-bottom: 2px solid var(--f1-red);
+      white-space: nowrap;
+    }
+    tbody tr:nth-child(even) { background: var(--bg-row-alt); }
+    tbody tr:hover { background: #2c2c2c; }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+    td.lap-num {
+      color: var(--gray-light);
+      font-size: 0.8rem;
+      font-family: var(--font-sans);
+      width: 48px;
+    }
+    td.driver-tag {
+      font-family: var(--font-sans);
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--gray-light);
+    }
+    td.notes-cell {
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      color: var(--gray-mid);
+    }
+    .pit-badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-right: 3px;
+    }
+    .pit-out { background: #1a3a1a; color: var(--col-green); }
+    .pit-in  { background: #1a2a3a; color: #60a5fa; }
+
+    /* ── sector color classes ── */
+    .sector-purple { color: var(--col-purple); font-weight: 700; }
+    .sector-green  { color: var(--col-green);  font-weight: 600; }
+    .sector-yellow { color: var(--col-yellow); }
+    .sector-normal { color: var(--white); }
+    .sector-empty  { color: var(--gray-mid); }
+
+    /* ── color legend ── */
+    #legend {
+      display: flex;
+      gap: 16px;
+      padding: 10px 24px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      color: var(--gray-light);
+    }
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* ── footer ── */
+    footer {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      padding: 12px 24px;
+      font-size: 0.75rem;
+      color: var(--gray-mid);
+      text-align: center;
+      flex-shrink: 0;
+    }
+    footer a { color: var(--gray-light); text-decoration: none; }
+    footer a:hover { color: var(--white); }
+
+    /* ── responsive ── */
+    @media (max-width: 600px) {
+      header, #controls, #stats-bar, #legend, #table-wrapper { padding-left: 14px; padding-right: 14px; }
+      #controls { flex-direction: column; }
+      .control-group { min-width: 100%; }
+      #stats-bar { flex-direction: column; }
+      #legend { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="title-group">
+    <span class="f1-logo">F1</span>
+    <h1>Sector Times</h1>
+  </div>
+  <div class="live-group" id="live-group" hidden>
+    <span class="live-dot"></span>
+    <span class="live-badge">LIVE</span>
+    <span class="last-updated" id="last-updated"></span>
+  </div>
+</header>
+
+<section id="controls">
+  <div class="control-group">
+    <label for="sel-year">Year</label>
+    <select id="sel-year">
+      <option value="2023">2023</option>
+      <option value="2024">2024</option>
+      <option value="2025" selected>2025</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label for="sel-race">Race</label>
+    <select id="sel-race" disabled>
+      <option value="">— select race —</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label for="sel-session">Session</label>
+    <select id="sel-session" disabled>
+      <option value="">— select session —</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label for="sel-driver">Driver</label>
+    <select id="sel-driver" disabled>
+      <option value="">— all drivers —</option>
+    </select>
+  </div>
+</section>
+
+<section id="stats-bar" hidden>
+  <div class="stat-card">
+    <span class="stat-label">Best S1</span>
+    <span class="stat-value" id="val-s1">—</span>
+    <span class="stat-driver" id="drv-s1"></span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Best S2</span>
+    <span class="stat-value" id="val-s2">—</span>
+    <span class="stat-driver" id="drv-s2"></span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Best S3</span>
+    <span class="stat-value" id="val-s3">—</span>
+    <span class="stat-driver" id="drv-s3"></span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Best Lap</span>
+    <span class="stat-value" id="val-lap">—</span>
+    <span class="stat-driver" id="drv-lap"></span>
+  </div>
+</section>
+
+<div id="legend" hidden>
+  <div class="legend-item">
+    <span class="legend-dot" style="background:var(--col-purple)"></span>
+    Session best
+  </div>
+  <div class="legend-item">
+    <span class="legend-dot" style="background:var(--col-green)"></span>
+    Driver personal best
+  </div>
+  <div class="legend-item">
+    <span class="legend-dot" style="background:var(--col-yellow)"></span>
+    Within 107% of session best
+  </div>
+</div>
+
+<section id="table-wrapper">
+  <div id="loading-overlay" hidden>
+    <div class="spinner"></div>
+    <span>Loading…</span>
+  </div>
+  <div id="error-banner" hidden></div>
+  <table id="laps-table" hidden>
+    <thead id="laps-thead">
+      <tr>
+        <th>Lap</th>
+        <th>S1</th>
+        <th>S2</th>
+        <th>S3</th>
+        <th>Lap Time</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody id="laps-body"></tbody>
+  </table>
+</section>
+
+<footer>
+  Data provided by <a href="https://openf1.org" target="_blank" rel="noopener">OpenF1 API</a>
+  &mdash; free &amp; open source
+</footer>
+
+<script>
+  'use strict';
+
+  const BASE = 'https://api.openf1.org/v1';
+
+  /* ── state ── */
+  const state = {
+    year: 2025,
+    meetingKey: null,
+    sessionKey: null,
+    sessionObj: null,
+    sessionsCache: [],
+    driverNumber: null,
+    lapsData: [],
+    driversMap: {},
+    refreshTimer: null,
+  };
+
+  /* ── dom refs ── */
+  let dom;
+
+  /* ── api ── */
+  async function apiFetch(path) {
+    const res = await fetch(BASE + path);
+    if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${path}`);
+    return res.json();
+  }
+
+  const fetchMeetings = (year) =>
+    apiFetch(`/meetings?year=${year}`);
+
+  const fetchSessions = (meetingKey) =>
+    apiFetch(`/sessions?meeting_key=${meetingKey}`);
+
+  const fetchDrivers = (sessionKey) =>
+    apiFetch(`/drivers?session_key=${sessionKey}`);
+
+  const fetchLaps = (sessionKey) =>
+    apiFetch(`/laps?session_key=${sessionKey}`);
+
+  /* ── utilities ── */
+  function formatTime(s) {
+    if (s == null || s === 0) return '—';
+    const mins = Math.floor(s / 60);
+    const rem = (s % 60).toFixed(3);
+    const padded = rem.includes('.') ? rem.padStart(6, '0') : rem + '.000';
+    return mins > 0 ? `${mins}:${padded}` : parseFloat(padded).toFixed(3);
+  }
+
+  function isSessionLive(session) {
+    if (!session || !session.date_start || !session.date_end) return false;
+    const now = new Date();
+    return new Date(session.date_start) <= now && now < new Date(session.date_end);
+  }
+
+  function computeBests(laps, field) {
+    let best = null;
+    for (const lap of laps) {
+      const v = lap[field];
+      if (v != null && v > 0 && (best === null || v < best.value)) {
+        best = { value: v, driverNumber: lap.driver_number };
+      }
+    }
+    return best;
+  }
+
+  function classifyCell(value, sessionBestVal, driverBestVal) {
+    if (value == null || value === 0) return 'sector-empty';
+    const eps = 0.001;
+    if (sessionBestVal != null && Math.abs(value - sessionBestVal) < eps) return 'sector-purple';
+    if (driverBestVal != null && Math.abs(value - driverBestVal) < eps) return 'sector-green';
+    if (sessionBestVal != null && value <= sessionBestVal * 1.07) return 'sector-yellow';
+    return 'sector-normal';
+  }
+
+  function preprocessLaps(laps) {
+    const sorted = [...laps].sort((a, b) => {
+      if (a.driver_number !== b.driver_number) return a.driver_number - b.driver_number;
+      return a.lap_number - b.lap_number;
+    });
+    const pitOutKeys = new Set(
+      sorted
+        .filter(l => l.is_pit_out_lap)
+        .map(l => `${l.driver_number}_${l.lap_number}`)
+    );
+    return sorted.map(l => ({
+      ...l,
+      is_pit_in_lap: pitOutKeys.has(`${l.driver_number}_${l.lap_number + 1}`),
+    }));
+  }
+
+  /* ── render ── */
+  const SECTOR_FIELDS = [
+    ['s1', 'duration_sector_1'],
+    ['s2', 'duration_sector_2'],
+    ['s3', 'duration_sector_3'],
+    ['lap', 'lap_duration'],
+  ];
+
+  function renderTable() {
+    const showAllDrivers = !state.driverNumber;
+    const filtered = showAllDrivers
+      ? [...state.lapsData].sort((a, b) => a.lap_number - b.lap_number || a.driver_number - b.driver_number)
+      : state.lapsData
+          .filter(l => l.driver_number === +state.driverNumber)
+          .sort((a, b) => a.lap_number - b.lap_number);
+
+    /* session-wide bests */
+    const sessionBests = {};
+    for (const [key, field] of SECTOR_FIELDS) {
+      sessionBests[key] = computeBests(state.lapsData, field);
+    }
+
+    /* per-driver bests */
+    const perDriverBests = {};
+    for (const lap of state.lapsData) {
+      const dn = lap.driver_number;
+      if (!perDriverBests[dn]) perDriverBests[dn] = { s1: null, s2: null, s3: null, lap: null };
+      for (const [key, field] of SECTOR_FIELDS) {
+        const v = lap[field];
+        if (v != null && v > 0 && (perDriverBests[dn][key] === null || v < perDriverBests[dn][key])) {
+          perDriverBests[dn][key] = v;
+        }
+      }
+    }
+
+    /* thead */
+    const driverCol = showAllDrivers ? '<th>Driver</th>' : '';
+    dom.lapsHead.innerHTML = `<tr>
+      <th>Lap</th><th>S1</th><th>S2</th><th>S3</th><th>Lap Time</th><th>Notes</th>${driverCol}
+    </tr>`;
+
+    /* tbody */
+    const rows = filtered.map(lap => {
+      const dn = lap.driver_number;
+      const dBests = perDriverBests[dn] || {};
+
+      const cells = SECTOR_FIELDS.map(([key, field]) => {
+        const v = lap[field];
+        const cls = classifyCell(v, sessionBests[key]?.value ?? null, dBests[key]);
+        return `<td class="${cls}">${formatTime(v)}</td>`;
+      });
+
+      const notes = [];
+      if (lap.is_pit_out_lap) notes.push('<span class="pit-badge pit-out">PIT OUT</span>');
+      if (lap.is_pit_in_lap)  notes.push('<span class="pit-badge pit-in">PIT IN</span>');
+
+      const driver = state.driversMap[dn];
+      const driverCell = showAllDrivers
+        ? `<td class="driver-tag" style="color:${driver?.team_colour ? '#' + driver.team_colour : 'var(--gray-light)'}">${driver?.name_acronym ?? dn}</td>`
+        : '';
+
+      return `<tr>
+        <td class="lap-num">${lap.lap_number}</td>
+        ${cells.join('')}
+        <td class="notes-cell">${notes.join('')}</td>
+        ${driverCell}
+      </tr>`;
+    });
+
+    dom.lapsBody.innerHTML = rows.join('');
+    dom.lapsTable.hidden = false;
+  }
+
+  function updateStatsBar() {
+    for (const [key, field] of SECTOR_FIELDS) {
+      const best = computeBests(state.lapsData, field);
+      dom.statVals[key].textContent = best ? formatTime(best.value) : '—';
+      const driver = best ? state.driversMap[best.driverNumber] : null;
+      dom.statDrvs[key].textContent = driver ? driver.name_acronym : '';
+    }
+    dom.statsBar.hidden = false;
+    dom.legend.hidden = false;
+  }
+
+  /* ── loading / error ── */
+  function showLoading(visible) {
+    dom.loadingOverlay.hidden = !visible;
+    if (visible) dom.errorBanner.hidden = true;
+  }
+
+  function showError(msg) {
+    showLoading(false);
+    dom.errorBanner.textContent = `Error: ${msg}`;
+    dom.errorBanner.hidden = false;
+  }
+
+  /* ── live indicator ── */
+  function setLiveIndicator(live) {
+    dom.liveGroup.hidden = !live;
+    if (live) {
+      dom.lastUpdated.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+    }
+  }
+
+  /* ── refresh ── */
+  function stopRefresh() {
+    if (state.refreshTimer) {
+      clearInterval(state.refreshTimer);
+      state.refreshTimer = null;
+    }
+  }
+
+  async function refreshLaps() {
+    if (!state.sessionKey) return;
+    try {
+      const data = await fetchLaps(state.sessionKey);
+      state.lapsData = preprocessLaps(data);
+      renderTable();
+      updateStatsBar();
+      dom.lastUpdated.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+      if (!isSessionLive(state.sessionObj)) {
+        stopRefresh();
+        setLiveIndicator(false);
+      }
+    } catch (e) {
+      console.warn('Refresh error:', e.message);
+    }
+  }
+
+  function startOrStopRefresh() {
+    stopRefresh();
+    if (isSessionLive(state.sessionObj)) {
+      setLiveIndicator(true);
+      state.refreshTimer = setInterval(refreshLaps, 3000);
+    } else {
+      setLiveIndicator(false);
+    }
+  }
+
+  /* ── cascade reset ── */
+  function resetFrom(level) {
+    stopRefresh();
+    setLiveIndicator(false);
+    state.lapsData = [];
+    state.driversMap = {};
+
+    if (level === 'year') {
+      dom.selRace.innerHTML = '<option value="">— select race —</option>';
+      dom.selRace.disabled = true;
+      state.meetingKey = null;
+    }
+    if (level === 'year' || level === 'race') {
+      dom.selSession.innerHTML = '<option value="">— select session —</option>';
+      dom.selSession.disabled = true;
+      state.sessionKey = null;
+      state.sessionObj = null;
+      state.sessionsCache = [];
+    }
+    if (level === 'year' || level === 'race' || level === 'session') {
+      dom.selDriver.innerHTML = '<option value="">— all drivers —</option>';
+      dom.selDriver.disabled = true;
+      state.driverNumber = null;
+    }
+
+    dom.statsBar.hidden = true;
+    dom.legend.hidden = true;
+    dom.lapsTable.hidden = true;
+    dom.lapsBody.innerHTML = '';
+    dom.errorBanner.hidden = true;
+  }
+
+  /* ── data loaders ── */
+  async function loadMeetings() {
+    showLoading(true);
+    try {
+      const meetings = await fetchMeetings(state.year);
+      meetings.sort((a, b) => new Date(a.date_start) - new Date(b.date_start));
+      dom.selRace.innerHTML = '<option value="">— select race —</option>';
+      for (const m of meetings) {
+        const opt = document.createElement('option');
+        opt.value = m.meeting_key;
+        opt.textContent = m.meeting_name || m.country_name || `Meeting ${m.meeting_key}`;
+        dom.selRace.appendChild(opt);
+      }
+      dom.selRace.disabled = false;
+    } catch (e) {
+      showError(`Could not load meetings: ${e.message}`);
+      return;
+    }
+    showLoading(false);
+  }
+
+  async function loadSessions() {
+    showLoading(true);
+    try {
+      const sessions = await fetchSessions(state.meetingKey);
+      sessions.sort((a, b) => new Date(a.date_start) - new Date(b.date_start));
+      state.sessionsCache = sessions;
+      dom.selSession.innerHTML = '<option value="">— select session —</option>';
+      for (const s of sessions) {
+        const opt = document.createElement('option');
+        opt.value = s.session_key;
+        opt.textContent = s.session_name || `Session ${s.session_key}`;
+        dom.selSession.appendChild(opt);
+      }
+      dom.selSession.disabled = false;
+    } catch (e) {
+      showError(`Could not load sessions: ${e.message}`);
+      return;
+    }
+    showLoading(false);
+  }
+
+  async function loadDrivers() {
+    try {
+      const drivers = await fetchDrivers(state.sessionKey);
+      drivers.sort((a, b) =>
+        (a.name_acronym || '').localeCompare(b.name_acronym || '')
+      );
+      state.driversMap = {};
+      for (const d of drivers) {
+        state.driversMap[d.driver_number] = d;
+      }
+      dom.selDriver.innerHTML = '<option value="">— all drivers —</option>';
+      for (const d of drivers) {
+        const opt = document.createElement('option');
+        opt.value = d.driver_number;
+        opt.textContent = `${d.name_acronym} — ${d.full_name || ''}`.trimEnd().replace(/—\s*$/, '');
+        dom.selDriver.appendChild(opt);
+      }
+      dom.selDriver.disabled = false;
+    } catch (e) {
+      console.warn('Could not load drivers:', e.message);
+    }
+  }
+
+  async function loadAndRenderLaps() {
+    showLoading(true);
+    try {
+      const data = await fetchLaps(state.sessionKey);
+      state.lapsData = preprocessLaps(data);
+      renderTable();
+      updateStatsBar();
+    } catch (e) {
+      showError(`Could not load lap data: ${e.message}`);
+      return;
+    }
+    showLoading(false);
+  }
+
+  /* ── event handlers ── */
+  function onYearChange() {
+    state.year = +dom.selYear.value;
+    resetFrom('year');
+    loadMeetings();
+  }
+
+  function onRaceChange() {
+    state.meetingKey = dom.selRace.value || null;
+    if (!state.meetingKey) return;
+    resetFrom('race');
+    loadSessions();
+  }
+
+  function onSessionChange() {
+    state.sessionKey = dom.selSession.value ? +dom.selSession.value : null;
+    if (!state.sessionKey) return;
+    state.sessionObj = state.sessionsCache.find(s => s.session_key === state.sessionKey) || null;
+    resetFrom('session');
+    Promise.all([loadDrivers(), loadAndRenderLaps()]).then(() => {
+      startOrStopRefresh();
+    });
+  }
+
+  function onDriverChange() {
+    state.driverNumber = dom.selDriver.value || null;
+    renderTable();
+  }
+
+  /* ── init ── */
+  document.addEventListener('DOMContentLoaded', () => {
+    dom = {
+      selYear:       document.getElementById('sel-year'),
+      selRace:       document.getElementById('sel-race'),
+      selSession:    document.getElementById('sel-session'),
+      selDriver:     document.getElementById('sel-driver'),
+      statsBar:      document.getElementById('stats-bar'),
+      legend:        document.getElementById('legend'),
+      lapsTable:     document.getElementById('laps-table'),
+      lapsHead:      document.getElementById('laps-thead'),
+      lapsBody:      document.getElementById('laps-body'),
+      loadingOverlay:document.getElementById('loading-overlay'),
+      errorBanner:   document.getElementById('error-banner'),
+      liveGroup:     document.getElementById('live-group'),
+      lastUpdated:   document.getElementById('last-updated'),
+      statVals: {
+        s1:  document.getElementById('val-s1'),
+        s2:  document.getElementById('val-s2'),
+        s3:  document.getElementById('val-s3'),
+        lap: document.getElementById('val-lap'),
+      },
+      statDrvs: {
+        s1:  document.getElementById('drv-s1'),
+        s2:  document.getElementById('drv-s2'),
+        s3:  document.getElementById('drv-s3'),
+        lap: document.getElementById('drv-lap'),
+      },
+    };
+
+    dom.selYear.addEventListener('change', onYearChange);
+    dom.selRace.addEventListener('change', onRaceChange);
+    dom.selSession.addEventListener('change', onSessionChange);
+    dom.selDriver.addEventListener('change', onDriverChange);
+
+    loadMeetings();
+  });
+</script>
+
+</body>
+</html>
